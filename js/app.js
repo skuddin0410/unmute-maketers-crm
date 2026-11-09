@@ -43,6 +43,7 @@
     articles: '<path d="M4 5h16M4 10h16M4 15h10M4 20h7"/>',
     moves: '<path d="M4 17 9.5 11.5l3.5 3.5L20 8"/><path d="M15 8h5v5"/>',
     pages: '<rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9h17M7 6.5h.01M9.5 6.5h.01"/>',
+    flows: '<rect x="3.5" y="3.5" width="7" height="5" rx="1.5"/><rect x="13.5" y="15.5" width="7" height="5" rx="1.5"/><path d="M7 8.5v4.5a2 2 0 0 0 2 2h4.5"/><path d="m11.5 13 2 2-2 2"/>',
     content: '<path d="M5 4h11l3 3v13H5z"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/>',
     community: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14.5s1.2 1.8 3.5 1.8 3.5-1.8 3.5-1.8M9 9.5h.01M15 9.5h.01"/>',
     team: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 0 0-2 1.2L5 5.9l-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.4-.9a7 7 0 0 0 2 1.2l.4 2.6h4.4l.4-2.6a7 7 0 0 0 2-1.2l2.4.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/>',
@@ -55,7 +56,7 @@
     { group: "Overview", items: [{ id: "dashboard", label: "Dashboard" }] },
     { group: "CRM", items: [{ id: "leads", label: "Leads" }, { id: "guests", label: "Guests & episodes" }, { id: "followups", label: "Follow-ups" }, { id: "partners", label: "Partnerships" }, { id: "deals", label: "Sponsors & deals" }] },
     { group: "Website", items: [{ id: "directory", label: "Marketer directory" }, { id: "episodes", label: "Episodes" }, { id: "articles", label: "Articles" }, { id: "moves", label: "People Moves" }, { id: "pages", label: "Site pages" }] },
-    { group: "Audience", items: [{ id: "socials", label: "Socials" }, { id: "content", label: "Newsletter" }, { id: "community", label: "Community" }] },
+    { group: "Audience", items: [{ id: "socials", label: "Socials" }, { id: "content", label: "Newsletter" }, { id: "community", label: "Community" }, { id: "flows", label: "Flows" }] },
     { group: "Admin", items: [{ id: "team", label: "Team & setup" }] }
   ];
   function dueCount() { return db.followups.filter((f) => !f.done && daysFrom(f.due) <= 0).length; }
@@ -415,6 +416,54 @@
       '<div class="panel"><h2>Site settings</h2><dl class="fields">' + settings.map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("") + '</dl><p class="tip">Directory profiles, episodes, articles and People Moves publish from their own pages. This list controls the fixed pages around them.</p></div></div>';
   };
   views.pages.after = function () { $$("tbody tr").forEach((r) => r.addEventListener("click", () => openForm("pages", db.pages.find((p) => p.id === r.dataset.id)))); };
+
+  /* Flows: how each workflow runs, step by step */
+  const FLOWS = [
+    { id: "lead", name: "Lead flow", lead: "How a marketer goes from a name on a list to a booked podcast guest.",
+      steps: [
+        { t: "Collect leads", s: "Apollo and Seamless exports, People Moves, guest referrals, Top 100 nominations, website sign-ups, public association pages", go: "leads", page: "Leads" },
+        { t: "Import and remove duplicates", s: "CSV import matches columns and skips people already in the CRM. Stage: Mined", go: "leads", page: "Leads" },
+        { t: "Analyze", s: "Score fit for the show and sponsor potential, set level (CMO, Director, Manager) and region. Stage: Analyzed", go: "leads", page: "Leads" },
+        { t: "Enrich", s: "Add work email and LinkedIn from Apollo or Seamless. Stage: Enriched", go: "leads", page: "Leads" },
+        { t: "Pick this week's list", s: "Highest fit first, a mix of levels and regions. Stage: Ready to invite", go: "leads", page: "Leads" },
+        { t: "Send a personal invite", s: "\"We'd like to feature you on Marketers Unmuted.\" No selling. Stage: Invited", go: "leads", page: "Leads" },
+        { decision: true, t: "Did they reply yes?",
+          yes: { t: "Book as guest", s: "Pick a recording slot. The lead becomes a guest and moves to Booked", go: "guests", page: "Guests & episodes" },
+          no: { t: "Nudge, then nurture", s: "A friendly follow-up after a few days. Still no reply: add to the newsletter and try again next quarter", go: "followups", page: "Follow-ups" } }
+      ],
+      loop: "Every guest is asked for two marketers to feature next, and those names go back to step 1." },
+    { id: "article", name: "General article flow", lead: "Articles that don't come from an episode: trend-led pieces that bring marketers to the site every week.",
+      steps: [
+        { t: "Weekly trend scan", s: "Runs on a schedule: industry news, new surveys and reports, Canadian marketing news, People Moves", go: "articles", page: "Articles" },
+        { t: "Analyze and score topics", s: "Fit for managers to CMOs, timeliness, a link to an episode, interest to sponsors", go: "articles", page: "Articles" },
+        { t: "Pick the topic", s: "Top pick plus two backups queued for later weeks", go: "articles", page: "Articles" },
+        { t: "Choose a template", s: "The Unmuted Take, Five Moves, Flop to Win or Ask a CMO", go: "articles", page: "Articles" },
+        { t: "Write with SEO built in", s: "Search title, meta description, page address, keywords, FAQ, every number linked to its source. Stage: Draft", go: "articles", page: "Articles" },
+        { t: "Create the header image", s: "Branded image made in Canva, saved only in the Claude folder", go: "articles", page: "Articles" },
+        { decision: true, t: "Approved in review?",
+          yes: { t: "Schedule and publish", s: "Goes live on the website at the planned time. Stage: Published", go: "articles", page: "Articles" },
+          no: { t: "Edit and resubmit", s: "Fix what was flagged, then back to review", go: "articles", page: "Articles", back: true } },
+        { t: "Share it", s: "LinkedIn post and carousel, Instagram and Facebook card, X post, a slot in the Unmuted Brief", go: "socials", page: "Socials" },
+        { t: "Measure", s: "Views, newsletter clicks, shares and whether AI search tools cite it", go: "articles", page: "Articles" }
+      ],
+      loop: "What performed best shapes next week's trend scan." }
+  ];
+  const flowUI = { id: "lead" };
+  views.flows = function () {
+    const f = FLOWS.find((x) => x.id === flowUI.id) || FLOWS[0];
+    let n = 0;
+    const node = (st, cls) => '<div class="fnode ' + (cls || "") + '"><span class="fnum">' + (++n) + '</span><div class="fbody"><b>' + esc(st.t) + "</b><span>" + esc(st.s) + '</span></div><a class="fgo" href="#' + st.go + '">' + esc(st.page) + "</a></div>";
+    const small = (st, label, cls) => '<div class="fbranch ' + cls + '"><span class="flabel">' + label + '</span><div class="fnode small"><div class="fbody"><b>' + esc(st.t) + "</b><span>" + esc(st.s) + '</span></div><a class="fgo" href="#' + st.go + '">' + esc(st.page) + "</a></div>" + (st.back ? '<span class="fback">Back to review</span>' : "") + "</div>";
+    const body = f.steps.map((st, i) => {
+      const arrow = i ? '<div class="farrow" aria-hidden="true"></div>' : "";
+      if (st.decision) return arrow + '<div class="fdecision"><div class="fdiamond"><span>' + esc(st.t) + '</span></div><div class="fbranches">' + small(st.yes, "Yes", "yes") + small(st.no, "No", "no") + "</div></div>";
+      return arrow + node(st);
+    }).join("");
+    return pageHead("Flows", "How each workflow runs from start to end, and which CRM page each step happens on.") +
+      '<div class="toolbar"><div class="seg" role="group" aria-label="Choose a flow" style="margin-left:0">' + FLOWS.map((x) => '<button data-flow="' + x.id + '" aria-pressed="' + (x.id === f.id) + '">' + esc(x.name) + "</button>").join("") + "</div></div>" +
+      '<section class="panel flow-panel"><h2>' + esc(f.name) + '</h2><p class="muted" style="margin:-6px 0 18px">' + esc(f.lead) + '</p><div class="flow">' + body + '<div class="farrow" aria-hidden="true"></div><div class="floop">↻ ' + esc(f.loop) + "</div></div></section>";
+  };
+  views.flows.after = function () { $$("[data-flow]").forEach((b) => b.addEventListener("click", () => { flowUI.id = b.dataset.flow; render(); })); };
 
   /* Content */
   const contentUI = { type: "" };

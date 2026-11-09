@@ -421,6 +421,31 @@ td.num, th.num { text-align: right; }
 .ap p { max-width: 68ch; color: var(--ink-2); line-height: 1.7; }
 .ap-ex { font-size: 17px; color: var(--ink) !important; }
 
+.flow-panel { max-width: 860px; }
+.flow { display: flex; flex-direction: column; align-items: stretch; }
+.fnode { display: flex; gap: 14px; align-items: flex-start; border: 1px solid var(--line-strong); border-radius: var(--radius-m); padding: 14px 16px; background: var(--surface); }
+.fnum { width: 30px; height: 30px; border-radius: 50%; background: var(--navy); color: var(--lime); display: grid; place-items: center; font-weight: 800; font-size: 13px; flex: none; }
+.fbody { flex: 1; min-width: 0; }
+.fbody b { display: block; font-weight: 700; font-size: 15px; }
+.fbody span { display: block; color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+.fgo { flex: none; font-size: 12px; font-weight: 600; color: var(--ink-2); background: var(--paper); border: 1px solid var(--line); border-radius: 20px; padding: 2px 10px; text-decoration: none; white-space: nowrap; align-self: center; }
+.fgo:hover { border-color: var(--navy); color: var(--ink); }
+.farrow { height: 26px; width: 2px; background: var(--line-strong); margin-left: 30px; position: relative; }
+.farrow::after { content: ""; position: absolute; bottom: -1px; left: -4px; border: 5px solid transparent; border-top: 6px solid var(--line-strong); border-bottom: 0; }
+.fdecision { display: flex; flex-direction: column; gap: 14px; }
+.fdiamond { align-self: flex-start; margin-left: 4px; background: var(--lime); color: var(--navy); font-weight: 800; padding: 10px 18px; border-radius: 6px; clip-path: polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%); padding-left: 26px; padding-right: 26px; }
+.fbranches { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-left: 30px; border-left: 2px solid var(--line-strong); margin-left: 30px; }
+.fbranch { display: flex; flex-direction: column; gap: 6px; }
+.flabel { font-size: 12px; font-weight: 800; }
+.fbranch.yes .flabel { color: var(--ok); }
+.fbranch.no .flabel { color: #A3141E; }
+.fbranch.yes .fnode { border-color: #BFE6CF; background: var(--ok-soft); }
+.fbranch.no .fnode { border-color: #F7C6CA; background: var(--red-soft); }
+.fnode.small { padding: 12px 14px; }
+.fback { font-size: 12px; color: var(--ink-3); }
+.fback::before { content: "↺ "; }
+.floop { align-self: flex-start; background: var(--paper); border: 1px dashed var(--line-strong); border-radius: var(--radius-m); padding: 10px 14px; color: var(--ink-2); font-size: 13px; font-weight: 600; }
+
 @media (max-width: 1100px) {
   .profile-layout, .editor-layout { grid-template-columns: 1fr; }
   .pp-grid { grid-template-columns: 1fr; }
@@ -438,6 +463,8 @@ td.num, th.num { text-align: right; }
   .demo-banner { margin: 12px 16px 0; }
   .slots { grid-template-columns: 1fr; }
   .week { grid-template-columns: repeat(2, 1fr); }
+  .fbranches { grid-template-columns: 1fr; }
+  .fgo { display: none; }
   .pp-hero { flex-direction: column; padding: 20px; }
   .pp-segs { grid-template-columns: 1fr; }
   .pp-grid { padding: 18px; }
