@@ -38,7 +38,7 @@
     deals: '<path d="M12 3v18M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3S9.5 10.5 12 11s4.5 1.3 4.5 3.2-2 3.3-4.5 3.3-4.5-1.3-4.5-3"/>',
     content: '<path d="M5 4h11l3 3v13H5z"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/>',
     community: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14.5s1.2 1.8 3.5 1.8 3.5-1.8 3.5-1.8M9 9.5h.01M15 9.5h.01"/>',
-    settings: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 0 0-2 1.2L5 5.9l-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.4-.9a7 7 0 0 0 2 1.2l.4 2.6h4.4l.4-2.6a7 7 0 0 0 2-1.2l2.4.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/>',
+    team: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 0 0-2 1.2L5 5.9l-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.4-.9a7 7 0 0 0 2 1.2l.4 2.6h4.4l.4-2.6a7 7 0 0 0 2-1.2l2.4.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/>',
     close: '<path d="M6 6l12 12M18 6 6 18"/>'
   };
   const icon = (k, s) => '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[k] + "</svg>";
@@ -49,7 +49,7 @@
     { group: "Guest pipeline", items: [{ id: "leads", label: "Leads" }, { id: "guests", label: "Guests & episodes" }, { id: "followups", label: "Follow-ups" }] },
     { group: "Growth", items: [{ id: "partners", label: "Partnerships" }, { id: "deals", label: "Sponsors & deals" }] },
     { group: "Audience", items: [{ id: "content", label: "Content" }, { id: "community", label: "Community" }] },
-    { group: "Admin", items: [{ id: "settings", label: "Team & setup" }] }
+    { group: "Admin", items: [{ id: "team", label: "Team & setup" }] }
   ];
   function dueCount() { return db.followups.filter((f) => !f.done && daysFrom(f.due) <= 0).length; }
   function renderNav(active) {
@@ -57,7 +57,7 @@
     $("#nav").innerHTML = NAV.map((g) => '<div class="nav-group"><h2>' + g.group + "</h2>" + g.items.map((it) => {
       const c = counts[it.id];
       const badge = c ? '<span class="nav-count' + (it.id === "followups" ? " alert" : "") + '">' + c + "</span>" : "";
-      return '<a class="nav-link" href="#/' + it.id + '"' + (active === it.id ? ' aria-current="page"' : "") + ">" + icon(it.id) + "<span>" + it.label + "</span>" + badge + "</a>";
+      return '<a class="nav-link" href="#' + it.id + '"' + (active === it.id ? ' aria-current="page"' : "") + ">" + icon(it.id) + "<span>" + it.label + "</span>" + badge + "</a>";
     }).join("") + "</div>").join("");
   }
 
@@ -110,6 +110,14 @@
     toast("Day 1, 14 and 30 follow-ups scheduled for " + g.name);
   }
 
+  function confirmBox(msg, okLabel, onOk) {
+    const m = $("#modal");
+    m.innerHTML = '<form method="dialog"><h2>Are you sure?</h2><p>' + esc(msg) + '</p><div class="modal-actions"><button class="btn" type="button" id="cNo">Cancel</button><button class="btn primary" type="button" id="cYes">' + esc(okLabel) + "</button></div></form>";
+    m.showModal();
+    $("#cNo").addEventListener("click", () => m.close());
+    $("#cYes").addEventListener("click", () => { m.close(); onOk(); });
+  }
+
   /* ---------- Views ---------- */
   const views = {};
 
@@ -140,17 +148,17 @@
     return pageHead("Good day, Raoof", "Here's the studio, the pipeline and what needs you today.") +
       '<section class="studio"><div class="studio-head"><span class="on-air"><i></i>ON AIR TODAY</span><h2>' + todays.length + " recording" + (todays.length === 1 ? "" : "s") + ' scheduled</h2><span class="muted">' + new Date().toLocaleDateString("en-CA", { weekday: "long", month: "long", day: "numeric" }) + '</span></div><div class="slots">' + slots + pad + "</div></section>" +
       '<div class="grid-2"><div class="stack">' +
-      '<div class="panel"><div class="panel-head"><h2>Due follow-ups</h2><a href="#/followups">All follow-ups</a></div>' + dueList + "</div>" +
-      '<div class="panel"><div class="panel-head"><h2>Lead funnel</h2><a href="#/leads">Open leads</a></div><div class="funnel">' + funnel + "</div></div>" +
+      '<div class="panel"><div class="panel-head"><h2>Due follow-ups</h2><a href="#followups">All follow-ups</a></div>' + dueList + "</div>" +
+      '<div class="panel"><div class="panel-head"><h2>Lead funnel</h2><a href="#leads">Open leads</a></div><div class="funnel">' + funnel + "</div></div>" +
       '</div><div class="stack">' +
       '<div class="panel"><div class="panel-head"><h2>6-month goals</h2></div>' + goals + "</div>" +
-      '<div class="panel"><div class="panel-head"><h2>Partnerships: Canada first</h2><a href="#/partners">All</a></div><ul class="list">' + nextPartner.map((p) => '<li><span class="grow"><strong>' + esc(p.org) + "</strong><span>" + esc(p.nextStep) + " · " + fmtDate(p.nextDate) + "</span></span>" + stagePill("partners", p.stage) + "</li>").join("") + "</ul></div>" +
-      '<div class="panel"><div class="panel-head"><h2>Sponsor pipeline</h2><a href="#/deals">Deals</a></div><div class="stat-row" style="grid-template-columns:1fr 1fr;margin:0"><div class="stat"><span>Open value</span><b>' + money(pipeline) + '</b></div><div class="stat"><span>Open deals</span><b>' + open.length + "</b></div></div></div>" +
+      '<div class="panel"><div class="panel-head"><h2>Partnerships: Canada first</h2><a href="#partners">All</a></div><ul class="list">' + nextPartner.map((p) => '<li><span class="grow"><strong>' + esc(p.org) + "</strong><span>" + esc(p.nextStep) + " · " + fmtDate(p.nextDate) + "</span></span>" + stagePill("partners", p.stage) + "</li>").join("") + "</ul></div>" +
+      '<div class="panel"><div class="panel-head"><h2>Sponsor pipeline</h2><a href="#deals">Deals</a></div><div class="stat-row" style="grid-template-columns:1fr 1fr;margin:0"><div class="stat"><span>Open value</span><b>' + money(pipeline) + '</b></div><div class="stat"><span>Open deals</span><b>' + open.length + "</b></div></div></div>" +
       "</div></div>";
   };
   views.dashboard.after = function () {
     $$("[data-open]").forEach((b) => b.addEventListener("click", () => { const [c, i] = b.dataset.open.split(":"); openRecord(c, i); }));
-    $$("[data-go]").forEach((b) => b.addEventListener("click", () => { location.hash = "#/" + b.dataset.go; }));
+    $$("[data-go]").forEach((b) => b.addEventListener("click", () => { location.hash = "#" + b.dataset.go; }));
   };
 
   /* Leads */
@@ -272,7 +280,7 @@
   views.community.after = function () { $$("[data-nom]").forEach((li) => li.addEventListener("click", () => openRecord("nominations", li.dataset.nom))); };
 
   /* Settings */
-  views.settings = function () {
+  views.team = function () {
     const team = [["Raoof", "Runs the CRM, guest booking, sales follow-up", "Owner"], ["SK", "Host and partnerships, face of the brand", "Host"], ["Podcast editing team", "Recording, editing, publishing", "Team"], ["Magazine design team", "Covers, templates, share kits", "Team"], ["Claude", "Lead analysis, drafts, show notes, newsletter, follow-ups", "Assistant"]];
     const phases = [["Phase 1", "Demo CRM: design, menus and categories with sample data", "Now"], ["Phase 2", "Supabase database, real logins, hosted on Netlify", "Next"], ["Phase 3", "Live leads and the full guest flow", "Later"]];
     return pageHead("Team & setup", "Who does what, and where this build is headed.") +
@@ -281,7 +289,7 @@
       '<div class="panel"><h2>Our rules</h2><ul class="list"><li>Nobody pays to be featured.</li><li>Top 100 is merit-only.</li><li>No selling on recording day.</li><li>Sponsored content is always labelled.</li><li>We partner with associations; we never compete.</li><li>Every guest is a VIP.</li></ul></div>' +
       '<div class="panel"><h2>Demo data</h2><p class="muted">Changes you make are saved in this browser only.</p><button class="btn" id="resetDemo2">Reset demo data</button></div></div></div>';
   };
-  views.settings.after = function () { $("#resetDemo2").addEventListener("click", resetDemo); };
+  views.team.after = function () { $("#resetDemo2").addEventListener("click", resetDemo); };
 
   /* ---------- Record drawer ---------- */
   function titleOf(col, r) { return r.name || r.org || r.company || r.title || r.who; }
@@ -322,7 +330,7 @@
     $("#closeDrawer").addEventListener("click", closeDrawer);
     $$(".stagebar button", d).forEach((b) => b.addEventListener("click", () => { setStage(col, id, b.dataset.stage); openRecord(col, id); }));
     $("#editRec").addEventListener("click", () => openForm(col, r));
-    $("#delRec").addEventListener("click", () => { if (!confirm("Delete " + titleOf(col, r) + "?")) return; db[col] = db[col].filter((x) => x.id !== id); save(); closeDrawer(); toast("Deleted"); render(); });
+    $("#delRec").addEventListener("click", () => confirmBox("Delete " + titleOf(col, r) + "? This can't be undone.", "Delete", () => { db[col] = db[col].filter((x) => x.id !== id); save(); closeDrawer(); toast("Deleted"); render(); }));
     $("#noteForm").addEventListener("submit", (e) => { e.preventDefault(); const t = $("#noteText").value.trim(); if (!t) { $("#noteText").focus(); return; } (r.notes = r.notes || []).push({ text: t, at: Date.now() }); save(); openRecord(col, id); toast("Note saved"); });
     const tg = $("#toGuest"); if (tg) tg.addEventListener("click", () => { closeDrawer(); openForm("guests", { name: r.name, title: r.title, company: r.company, region: r.region, email: r.email, series: { CMO: "CMO Edition", Director: "Director Edition" }[r.level] || "Manager Edition", format: "Remote" }, () => { r.stage = "invited"; save(); }); });
     const fs = $("#fuSched"); if (fs) fs.addEventListener("click", () => { scheduleFollowups(r); save(); render(); });
@@ -441,7 +449,7 @@
   }
 
   /* ---------- Router ---------- */
-  function current() { const r = (location.hash || "#/dashboard").slice(2); return views[r] ? r : "dashboard"; }
+  function current() { const r = (location.hash || "#dashboard").replace(/^#\/?/, ""); return views[r] ? r : "dashboard"; }
   function render() {
     const r = current();
     renderNav(r);
@@ -449,7 +457,8 @@
     $$("[data-add]").forEach((b) => b.addEventListener("click", () => openForm(b.dataset.add)));
     if (views[r].after) views[r].after();
   }
-  function resetDemo() { if (!confirm("Reset all demo data? Your changes in this browser will be lost.")) return; try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } db = MU.buildDemo(); save(); render(); toast("Demo data reset"); }
+  function resetDemo() { confirmBox("Reset all demo data? Your changes in this browser will be lost.", "Reset demo data", doReset); }
+  function doReset() { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } db = MU.buildDemo(); save(); render(); toast("Demo data reset"); }
 
   window.addEventListener("hashchange", () => { closeDrawer(); $("#rail").classList.remove("open"); render(); $("#view").focus({ preventScroll: true }); window.scrollTo(0, 0); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("#drawer").classList.contains("open")) closeDrawer(); });
