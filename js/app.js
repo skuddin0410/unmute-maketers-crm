@@ -17,6 +17,7 @@
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { /* ignore */ } }
   load();
+  (function migrate() { const d = MU.buildDemo(); let changed = false; ["posts", "accounts"].forEach((k) => { if (!db[k]) { db[k] = d[k]; changed = true; } }); if (changed) save(); })();
 
   /* ---------- Dates & formatting ---------- */
   const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
@@ -36,6 +37,7 @@
     followups: '<path d="M8 3v3M16 3v3"/><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="m8.5 13.5 2.5 2.5 4.5-5"/>',
     partners: '<path d="M7 11 3 7l4-4M17 13l4 4-4 4"/><path d="M3 7h11a4 4 0 0 1 4 4M21 17H10a4 4 0 0 1-4-4"/>',
     deals: '<path d="M12 3v18M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3S9.5 10.5 12 11s4.5 1.3 4.5 3.2-2 3.3-4.5 3.3-4.5-1.3-4.5-3"/>',
+    socials: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6"/>',
     content: '<path d="M5 4h11l3 3v13H5z"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/>',
     community: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14.5s1.2 1.8 3.5 1.8 3.5-1.8 3.5-1.8M9 9.5h.01M15 9.5h.01"/>',
     team: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 0 0-2 1.2L5 5.9l-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.4-.9a7 7 0 0 0 2 1.2l.4 2.6h4.4l.4-2.6a7 7 0 0 0 2-1.2l2.4.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/>',
@@ -48,12 +50,12 @@
     { group: "Overview", items: [{ id: "dashboard", label: "Dashboard" }] },
     { group: "Guest pipeline", items: [{ id: "leads", label: "Leads" }, { id: "guests", label: "Guests & episodes" }, { id: "followups", label: "Follow-ups" }] },
     { group: "Growth", items: [{ id: "partners", label: "Partnerships" }, { id: "deals", label: "Sponsors & deals" }] },
-    { group: "Audience", items: [{ id: "content", label: "Content" }, { id: "community", label: "Community" }] },
+    { group: "Audience", items: [{ id: "socials", label: "Socials" }, { id: "content", label: "Content" }, { id: "community", label: "Community" }] },
     { group: "Admin", items: [{ id: "team", label: "Team & setup" }] }
   ];
   function dueCount() { return db.followups.filter((f) => !f.done && daysFrom(f.due) <= 0).length; }
   function renderNav(active) {
-    const counts = { leads: db.leads.length, guests: db.guests.filter((g) => g.stage !== "shared").length, followups: dueCount() };
+    const counts = { socials: (db.posts || []).filter((p) => p.stage === "draft").length, leads: db.leads.length, guests: db.guests.filter((g) => g.stage !== "shared").length, followups: dueCount() };
     $("#nav").innerHTML = NAV.map((g) => '<div class="nav-group"><h2>' + g.group + "</h2>" + g.items.map((it) => {
       const c = counts[it.id];
       const badge = c ? '<span class="nav-count' + (it.id === "followups" ? " alert" : "") + '">' + c + "</span>" : "";
@@ -253,6 +255,29 @@
   };
   views.deals.after = function () { wireBoard("deals"); };
 
+  /* Socials */
+  const PLAT = { LinkedIn: "in", Facebook: "f", Instagram: "ig", X: "X", YouTube: "yt", TikTok: "tt" };
+  views.socials = function () {
+    const acc = '<div class="acc-grid">' + db.accounts.map((a) => '<div class="acc"><span class="acc-mark">' + (PLAT[a.platform] || "•") + '</span><div class="acc-body"><strong>' + esc(a.name) + '</strong><span>' + esc(a.platform) + " · " + esc(a.handle || "") + '</span><span class="muted">Logs in: ' + esc(a.loginNote || "—") + '</span></div><div class="acc-actions"><a class="btn small primary" href="' + esc(a.url || "#") + '" target="_blank" rel="noopener">Open</a><button class="btn small ghost" data-acc="' + a.id + '">Edit</button></div></div>').join("") + "</div>";
+    const days = Array.from({ length: 7 }, (_, i) => { const d = today(); d.setDate(d.getDate() + i); return d; });
+    const week = '<div class="week">' + days.map((d) => {
+      const key = localISO(d);
+      const list = db.posts.filter((p) => p.scheduledAt && p.scheduledAt.slice(0, 10) === key).sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+      return '<div class="day"><div class="day-head">' + d.toLocaleDateString("en-CA", { weekday: "short" }) + " <b>" + d.getDate() + "</b></div>" + (list.length ? list.map((p) => '<button class="chip" data-post="' + p.id + '"><b>' + fmtTime(p.scheduledAt) + "</b> " + esc(p.channel) + "</button>").join("") : '<span class="muted" style="font-size:12px">Free</span>') + "</div>";
+    }).join("") + "</div>";
+    const card = (p) => '<span class="sub">' + esc(p.channel) + " · " + esc(p.format || "") + "</span><strong style=\"font-weight:500;margin-top:4px\">" + esc(p.caption) + '</strong><div class="meta">' + (p.scheduledAt ? '<span class="pill lime">' + fmtDate(p.scheduledAt) + " " + fmtTime(p.scheduledAt) + "</span>" : "") + (p.episode ? '<span class="pill">' + esc(p.episode.split(",")[0]) + "</span>" : "") + "</div>";
+    return pageHead("Socials", "Your accounts in one place, the week's posting calendar, and the queue of posts Claude drafts for you to approve.", '<button class="btn" data-add="accounts">Add account</button><button class="btn primary" data-add="posts">New post</button>') +
+      '<div class="panel" style="margin-bottom:16px"><div class="panel-head"><h2>Accounts</h2><span class="muted">Open goes to the account in a new tab</span></div>' + acc +
+      '<p class="tip"><b>One window for everything:</b> install Ferdium (free) and add these accounts plus this CRM as tabs. You log in once and stay logged in. Claude can also post through the built-in browser in the Claude desktop app, with your approval on each post.</p></div>' +
+      '<div class="panel" style="margin-bottom:16px"><div class="panel-head"><h2>This week</h2><span class="muted">Links go in the first comment, not the post</span></div>' + week + "</div>" +
+      board("posts", db.posts, card);
+  };
+  views.socials.after = function () {
+    $$("[data-acc]").forEach((b) => b.addEventListener("click", () => openForm("accounts", db.accounts.find((a) => a.id === b.dataset.acc))));
+    $$("[data-post]").forEach((b) => b.addEventListener("click", () => openRecord("posts", b.dataset.post)));
+    wireBoard("posts");
+  };
+
   /* Content */
   const contentUI = { type: "" };
   views.content = function () {
@@ -292,13 +317,15 @@
   views.team.after = function () { $("#resetDemo2").addEventListener("click", resetDemo); };
 
   /* ---------- Record drawer ---------- */
-  function titleOf(col, r) { return r.name || r.org || r.company || r.title || r.who; }
+  function titleOf(col, r) { if (col === "posts") return r.channel + " post"; if (col === "accounts") return r.name + " on " + r.platform; return r.name || r.org || r.company || r.title || r.who; }
   function subOf(col, r) {
     if (col === "leads" || col === "guests") return r.title + ", " + r.company;
     if (col === "partners") return r.region + " · " + r.city;
     if (col === "deals") return r.product + " · " + money(r.value);
     if (col === "content") return r.type;
     if (col === "nominations") return r.company + " · " + r.category;
+    if (col === "posts") return (r.format || "") + (r.scheduledAt ? " · " + fmtDate(r.scheduledAt) + " " + fmtTime(r.scheduledAt) : " · not scheduled");
+    if (col === "accounts") return r.handle || "";
     return "";
   }
   function openRecord(col, id) {
@@ -319,6 +346,7 @@
     if (col === "leads") actions += '<button class="btn primary" id="toGuest">Book as guest</button>';
     if (col === "guests") actions += '<button class="btn" id="fuSched">Schedule follow-ups</button>';
     const assist = col === "leads" ? '<h3>Claude will do this</h3><div class="ai-box">In Phase 3, I score <b>fit</b> and <b>sponsor potential</b>, find the email from your Apollo/Seamless export, and draft a personal invite you approve.</div>' :
+      col === "posts" ? '<h3>Claude will do this</h3><div class="ai-box">I write the caption from the episode, pick the clip or quote card from Canva, and post it at the scheduled time once you approve. Links go in the first comment.</div>' :
       col === "guests" ? '<h3>Claude will do this</h3><div class="ai-box">Before recording: a one-page guest brief for SK. After: titles, show notes, 3–5 clip picks, quote cards in Canva and the guest share kit.</div>' : "";
     const notes = '<h3>Notes</h3>' + (r.notes && r.notes.length ? r.notes.map((n) => '<div class="note">' + esc(n.text) + "<small>" + new Date(n.at).toLocaleString("en-CA") + "</small></div>").join("") : '<p class="muted">No notes yet.</p>') +
       '<form class="note-form" id="noteForm"><label for="noteText" class="muted" style="font-size:13px">Add a note</label><textarea id="noteText" placeholder="What happened, what\'s next"></textarea><button class="btn small" type="submit">Save note</button></form>';
@@ -344,9 +372,10 @@
     const input = (f) => {
       const v = rec ? rec[f.key] : "";
       const req = f.required ? " required" : "";
-      const full = ["offer", "nextStep", "episode", "title", "linkedin"].includes(f.key) && col !== "leads" && col !== "guests" ? " full" : "";
+      const full = (f.type === "textarea" || (["offer", "nextStep", "episode", "title", "linkedin", "url"].includes(f.key) && col !== "leads" && col !== "guests")) ? " full" : "";
       let ctl;
-      if (f.type === "select") ctl = '<select name="' + f.key + '"' + req + '><option value=""></option>' + f.options.map((o) => "<option" + (o === v ? " selected" : "") + ">" + esc(o) + "</option>").join("") + "</select>";
+      if (f.type === "textarea") ctl = '<textarea name="' + f.key + '" rows="3"' + req + ">" + esc(v == null ? "" : v) + "</textarea>";
+      else if (f.type === "select") ctl = '<select name="' + f.key + '"' + req + '><option value=""></option>' + f.options.map((o) => "<option" + (o === v ? " selected" : "") + ">" + esc(o) + "</option>").join("") + "</select>";
       else ctl = '<input name="' + f.key + '" type="' + (f.type || "text") + '" value="' + esc(v == null ? "" : v) + '"' + req + ">";
       return '<label class="' + full + '">' + f.label + (f.required ? " *" : "") + ctl + '<span class="err" data-err="' + f.key + '"></span></label>';
     };
@@ -362,6 +391,7 @@
         const err = $('[data-err="' + f.key + '"]', m); err.textContent = "";
         if (f.required && !v) { err.textContent = f.label + " is required"; ok = false; }
         if (f.type === "email" && v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { err.textContent = "Enter a valid email"; ok = false; }
+        if (f.type === "url" && v && !/^https?:\/\//.test(v)) { err.textContent = "Start the link with https://"; ok = false; }
         if (f.type === "number" && v !== "") v = Number(v);
         out[f.key] = v;
       });

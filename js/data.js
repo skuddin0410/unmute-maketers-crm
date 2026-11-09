@@ -113,6 +113,33 @@ MU.SCHEMA = {
       { key: "owner", label: "Owner", type: "select", options: ["Claude", "Raoof", "SK", "Sales team"] }
     ]
   },
+  posts: {
+    label: "Post", plural: "Social posts",
+    stages: [
+      { id: "draft", name: "Draft", hint: "Claude wrote it" },
+      { id: "approved", name: "Approved", hint: "You said yes" },
+      { id: "scheduled", name: "Scheduled", hint: "Has a time" },
+      { id: "posted", name: "Posted", hint: "Live" }
+    ],
+    fields: [
+      { key: "caption", label: "Caption", required: true, type: "textarea" },
+      { key: "channel", label: "Channel", type: "select", required: true, options: ["LinkedIn page", "LinkedIn (SK)", "Facebook", "Instagram", "X", "YouTube Shorts"] },
+      { key: "format", label: "Format", type: "select", options: ["Video clip", "Quote card", "Text post", "Carousel", "Guest share kit"] },
+      { key: "episode", label: "From episode / guest" },
+      { key: "scheduledAt", label: "Post time", type: "datetime-local" },
+      { key: "firstComment", label: "Link for first comment" }
+    ]
+  },
+  accounts: {
+    label: "Account", plural: "Social accounts",
+    fields: [
+      { key: "name", label: "Account name", required: true },
+      { key: "platform", label: "Platform", type: "select", required: true, options: ["LinkedIn", "Facebook", "Instagram", "X", "YouTube", "TikTok"] },
+      { key: "handle", label: "Handle" },
+      { key: "url", label: "Profile URL", type: "url" },
+      { key: "loginNote", label: "Who logs in" }
+    ]
+  },
   nominations: {
     label: "Nomination", plural: "Top 100 nominations",
     stages: [
@@ -271,7 +298,35 @@ MU.buildDemo = function () {
     { title: "Small Business Show 2027", type: "Small Business Show", date: iso(120), city: "Toronto", capacity: 1500, rsvps: 22 }
   ].map((e) => Object.assign({ id: id("ev"), notes: [] }, e));
 
-  return { leads, guests, followups, partners, deals, content, nominations, coffee, events, waitlist: 47, newsletterSubs: 312, version: 1 };
+  const chans = ["LinkedIn page", "LinkedIn page", "LinkedIn (SK)", "Instagram", "Facebook", "X", "YouTube Shorts"];
+  const fmts = { "LinkedIn page": "Video clip", "LinkedIn (SK)": "Text post", Instagram: "Quote card", Facebook: "Video clip", X: "Text post", "YouTube Shorts": "Video clip" };
+  const caps = [
+    "Her proudest campaign almost never launched. Here's what changed her mind.",
+    "\"Give your team the mic.\" One director on why shout-outs beat bonuses.",
+    "The flop that taught a whole marketing team to test smaller.",
+    "Favourite tool? Not what you'd expect from a CMO.",
+    "This week on Marketers Unmuted: three marketers, three campaigns, zero fluff.",
+    "New episode: building a brand on a small-business budget.",
+    "Congratulations to this week's People Moves. Who should we feature next?"
+  ];
+  const doneGuests = guests.filter((g) => ["editing", "published", "shared"].includes(g.stage));
+  const posts = Array.from({ length: 14 }, (_, i) => {
+    const channel = chans[i % chans.length];
+    const stage = i < 3 ? "posted" : i < 6 ? "scheduled" : i < 9 ? "approved" : "draft";
+    const off = stage === "posted" ? -(i + 1) : stage === "scheduled" ? i - 3 : i - 5;
+    const g = doneGuests[i % Math.max(1, doneGuests.length)];
+    return { id: id("po"), caption: caps[i % caps.length], channel, format: fmts[channel], episode: g ? g.name + ", " + g.company : "", scheduledAt: stage === "draft" ? "" : at(off, [9, 12, 15, 17][i % 4], 0), firstComment: channel.startsWith("LinkedIn") ? "marketersunmuted.com/episodes" : "", stage, notes: [] };
+  });
+  const accounts = [
+    { name: "Marketers Unmuted", platform: "LinkedIn", handle: "Company page (to create)", url: "https://www.linkedin.com/", loginNote: "Raoof (page admin)" },
+    { name: "SK Uddin", platform: "LinkedIn", handle: "Personal profile", url: "https://www.linkedin.com/", loginNote: "SK" },
+    { name: "Marketers Unmuted", platform: "Facebook", handle: "Page (to create)", url: "https://www.facebook.com/", loginNote: "Raoof" },
+    { name: "Marketers Unmuted", platform: "Instagram", handle: "@marketersunmuted (check)", url: "https://www.instagram.com/", loginNote: "Raoof" },
+    { name: "Marketers Unmuted", platform: "X", handle: "@marketersunmuted (check)", url: "https://x.com/", loginNote: "Raoof" },
+    { name: "Marketers Unmuted", platform: "YouTube", handle: "Channel (to create)", url: "https://studio.youtube.com/", loginNote: "Podcast editing team" }
+  ].map((a) => Object.assign({ id: id("ac"), notes: [] }, a));
+
+  return { posts, accounts, leads, guests, followups, partners, deals, content, nominations, coffee, events, waitlist: 47, newsletterSubs: 312, version: 1 };
 };
 
 MU.GOALS = [
