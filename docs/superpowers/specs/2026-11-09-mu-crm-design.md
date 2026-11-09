@@ -14,14 +14,23 @@ One place to run Marketers Unmuted end to end: find marketers, book and record t
 | Group | Page | What it holds |
 |---|---|---|
 | Overview | Dashboard | Today's recordings ("On air today"), due follow-ups, lead funnel, 6-month goals from the briefing, Canada partnerships, sponsor pipeline |
-| Guest pipeline | Leads | Mined → Analyzed → Enriched → Ready to invite → Invited. Board and table, filters, CSV import (Apollo/Seamless), "Book as guest" |
+| CRM | Leads | Mined → Analyzed → Enriched → Ready to invite → Invited. Board and table, filters, CSV import (Apollo/Seamless), "Book as guest" |
 | | Guests & episodes | Booked → Recorded → Editing → Published → Shared. Moving to Recorded creates Day 1/14/30 follow-ups |
 | | Follow-ups | Overdue / Today / Next 7 days / Later / Done |
-| Growth | Partnerships | Associations by region and phase (Canada now, U.S. next, EU/MEA/APAC later) |
+| CRM | Partnerships | Associations by region and phase (Canada now, U.S. next, EU/MEA/APAC later) |
 | | Sponsors & deals | Conversation → Proposal → Negotiation → Won/Lost, with values and "from a guest" |
-| Audience | Content | Newsletter, People Moves, Marketer/Question of the Week, articles, LinkedIn posts |
+| Website | Marketer directory | One page per guest: journey, achievements, episode stories. Draft → With guest → Approved → Published. Built from the pre-interview form and episode, never copied from LinkedIn |
+| | Episodes | What's live on the site and podcast apps, linked to each guest and profile |
+| | Articles | Editor with live website preview |
+| | People Moves | Spotted → Verified → Published; "Add to leads" turns a new appointment into a sales lead |
+| | Site pages | Fixed pages, addresses, search titles, site settings |
+| Audience | Socials | Accounts, weekly post calendar, approval queue |
+| | Newsletter | Unmuted Brief, Marketer and Question of the Week |
 | | Community | Top 100 nominations, events, Coffee Match, waitlist |
 | Admin | Team & setup | Team roles, build phases, the briefing's rules |
+
+## One backend
+CRM and website share one database: a lead becomes a guest, the guest gets a website profile, and the episode feeds the profile, Episodes page, newsletter and socials. Phase 2 roles keep sponsor data private and give editors only the Website section.
 
 ## Design
 Brand from the team briefing: navy `#101B31`, lime `#D7FB6B`, signal red `#E6333F`, Manrope type, wordmark and MU badge cropped from the briefing cover. Cool light work area for long sessions; the navy "On air today" strip is the one bold element.

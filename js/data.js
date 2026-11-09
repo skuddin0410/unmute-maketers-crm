@@ -22,7 +22,7 @@ MU.SCHEMA = {
       { key: "region", label: "Region", type: "select", options: ["Canada", "United States", "Europe", "Middle East & Africa", "Asia-Pacific"] },
       { key: "city", label: "City" },
       { key: "industry", label: "Industry" },
-      { key: "source", label: "Source", type: "select", options: ["Apollo", "CMA public pages", "AMA Toronto public pages", "LinkedIn", "Guest referral", "Nomination", "Past sponsor", "Website sign-up"] },
+      { key: "source", label: "Source", type: "select", options: ["Apollo", "CMA public pages", "AMA Toronto public pages", "LinkedIn", "Guest referral", "Nomination", "Past sponsor", "Website sign-up", "People Moves"] },
       { key: "fit", label: "Fit score", type: "number" },
       { key: "sponsor", label: "Sponsor potential", type: "select", options: ["High", "Medium", "Low"] },
       { key: "email", label: "Email", type: "email" },
@@ -99,7 +99,7 @@ MU.SCHEMA = {
     ],
     fields: [
       { key: "title", label: "Title", required: true },
-      { key: "type", label: "Type", type: "select", options: ["Unmuted Brief newsletter", "People Moves", "Marketer of the Week", "Question of the Week", "Article", "LinkedIn post"] },
+      { key: "type", label: "Type", type: "select", options: ["Unmuted Brief newsletter", "Marketer of the Week", "Question of the Week", "Sponsor slot"] },
       { key: "date", label: "Publish date", type: "date" },
       { key: "owner", label: "Owner", type: "select", options: ["Claude", "Raoof", "SK", "Design team"] }
     ]
@@ -138,6 +138,75 @@ MU.SCHEMA = {
       { key: "handle", label: "Handle" },
       { key: "url", label: "Profile URL", type: "url" },
       { key: "loginNote", label: "Who logs in" }
+    ]
+  },
+  profiles: {
+    label: "Profile", plural: "Marketer directory",
+    stages: [
+      { id: "draft", name: "Draft", hint: "Claude wrote it" },
+      { id: "sent", name: "With guest", hint: "Waiting for approval" },
+      { id: "approved", name: "Approved", hint: "Guest said yes" },
+      { id: "published", name: "Published", hint: "Live on the site" }
+    ],
+    fields: [
+      { key: "name", label: "Name", required: true },
+      { key: "title", label: "Current role", required: true },
+      { key: "company", label: "Company", required: true },
+      { key: "city", label: "City" },
+      { key: "region", label: "Region", type: "select", options: ["Canada", "United States", "Europe", "Middle East & Africa", "Asia-Pacific"] },
+      { key: "headline", label: "Headline", type: "textarea" },
+      { key: "bio", label: "Their story", type: "textarea" },
+      { key: "timelineText", label: "Career timeline (one per line: year | role | company)", type: "textarea" },
+      { key: "achievementsText", label: "Achievements (one per line)", type: "textarea" },
+      { key: "proudest", label: "Proudest campaign", type: "textarea" },
+      { key: "flop", label: "The flop", type: "textarea" },
+      { key: "tool", label: "Favourite tool" },
+      { key: "shoutout", label: "Team shout-out", type: "textarea" },
+      { key: "quote", label: "Pull quote", type: "textarea" },
+      { key: "slug", label: "Page address (slug)" }
+    ]
+  },
+  articles: {
+    label: "Article", plural: "Articles",
+    stages: [
+      { id: "draft", name: "Draft" }, { id: "review", name: "In review" },
+      { id: "scheduled", name: "Scheduled" }, { id: "published", name: "Published" }
+    ],
+    fields: [
+      { key: "title", label: "Title", required: true },
+      { key: "category", label: "Category", type: "select", options: ["Guide", "Episode recap", "Guest column", "Research", "News"] },
+      { key: "author", label: "Author" },
+      { key: "date", label: "Publish date", type: "date" },
+      { key: "slug", label: "Page address (slug)" },
+      { key: "excerpt", label: "Summary", type: "textarea" },
+      { key: "body", label: "Article", type: "textarea" },
+      { key: "seoTitle", label: "Search title" }
+    ]
+  },
+  moves: {
+    label: "People Move", plural: "People Moves",
+    stages: [
+      { id: "spotted", name: "Spotted" }, { id: "verified", name: "Verified" },
+      { id: "published", name: "Published" }
+    ],
+    fields: [
+      { key: "name", label: "Name", required: true },
+      { key: "newRole", label: "New role", required: true },
+      { key: "company", label: "Company", required: true },
+      { key: "prevRole", label: "Previous role" },
+      { key: "region", label: "Region", type: "select", options: ["Canada", "United States", "Europe", "Middle East & Africa", "Asia-Pacific"] },
+      { key: "date", label: "Announced", type: "date" },
+      { key: "source", label: "Source link", type: "url" }
+    ]
+  },
+  pages: {
+    label: "Page", plural: "Site pages",
+    fields: [
+      { key: "name", label: "Page", required: true },
+      { key: "path", label: "Address", required: true },
+      { key: "status", label: "Status", type: "select", options: ["Live", "Draft", "Hidden"] },
+      { key: "seoTitle", label: "Search title" },
+      { key: "seoDesc", label: "Search description", type: "textarea" }
     ]
   },
   nominations: {
@@ -275,13 +344,11 @@ MU.buildDemo = function () {
 
   const content = [
     ["The Unmuted Brief #1", "Unmuted Brief newsletter", "drafting", 3, "Claude"],
-    ["People Moves: this week's appointments", "People Moves", "review", 2, "Claude"],
     ["Marketer of the Week", "Marketer of the Week", "scheduled", 0, "Claude"],
     ["What's the one tool you can't drop?", "Question of the Week", "scheduled", 0, "Claude"],
-    ["5 lessons from campaigns that flopped", "Article", "idea", 10, "Claude"],
-    ["How directors build a team people want to join", "Article", "drafting", 8, "Claude"],
-    ["Launch week announcement", "LinkedIn post", "review", 1, "SK"],
-    ["Guest share-kit template", "LinkedIn post", "published", -2, "Design team"]
+    ["The Unmuted Brief #2", "Unmuted Brief newsletter", "idea", 10, "Claude"],
+    ["Marketer of the Week (next)", "Marketer of the Week", "drafting", 7, "Claude"],
+    ["Launch sponsor slot", "Sponsor slot", "idea", 10, "Raoof"]
   ].map(([title, type, stage, d, owner]) => ({ id: id("ct"), title, type, stage, date: iso(d), owner, notes: [] }));
 
   const nominations = Array.from({ length: 10 }, () => {
@@ -326,7 +393,57 @@ MU.buildDemo = function () {
     { name: "Marketers Unmuted", platform: "YouTube", handle: "Channel (to create)", url: "https://studio.youtube.com/", loginNote: "Podcast editing team" }
   ].map((a) => Object.assign({ id: id("ac"), notes: [] }, a));
 
-  return { posts, accounts, leads, guests, followups, partners, deals, content, nominations, coffee, events, waitlist: 47, newsletterSubs: 312, version: 1 };
+  const slugify = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const roleSteps = [["Marketing Coordinator", "Brand Associate"], ["Marketing Manager", "Brand Manager"], ["Senior Manager, Marketing", "Head of Brand"]];
+  const wins = ["Grew branded search 3x in two years", "Led a rebrand across 40 locations", "Launched a loyalty program with 200,000 members", "Built the company's first in-house content studio", "Named to an industry rising-stars list", "Cut cost per lead by 35% while doubling volume", "Mentors new marketers through a local association", "Took a regional brand national"];
+  const proud = ["A neighbourhood campaign that turned customers into the ads. Real people, real stores, and sales up in every market we ran it.", "Our first B2B podcast. Sales started sending episodes instead of brochures.", "Relaunching a 50-year-old brand without losing the people who loved it."];
+  const flops = ["We launched a clever campaign nobody understood. The lesson: if you need to explain it, it isn't working.", "We bet the quarter on one channel and the algorithm changed. Now we never put more than a third anywhere.", "A contest that attracted entries, but none of them were customers."];
+  const tools = ["A shared spreadsheet the whole team can edit", "Customer interviews, every month, no exceptions", "A whiteboard and a timer", "Search data before any brief"];
+  const shouts = ["To my content lead, who turns rough ideas into work people actually read.", "To our designer, who never says it can't be done.", "To the sales team, who tell us the truth about what customers say."];
+  const quotes = ["Marketing is a promise. The product is whether you keep it.", "If the team can't explain the campaign in one sentence, customers won't either.", "Small budgets force you to be clear. Clarity wins."];
+  const profiles = guests.filter((g) => ["editing", "published", "shared"].includes(g.stage)).map((g, i) => {
+    const start = 2008 + (i % 6);
+    const prevCo = pick(companies)[0];
+    const steps = roleSteps.map((r, k) => (start + k * 4) + " | " + pick(r) + " | " + (k === 2 ? prevCo : pick(companies)[0]));
+    steps.push((start + 12) + " | " + g.title + " | " + g.company);
+    const status = g.stage === "editing" ? (i % 2 ? "sent" : "draft") : g.stage === "published" ? (i % 2 ? "approved" : "published") : "published";
+    return {
+      id: id("pf"), guestId: g.id, name: g.name, title: g.title, company: g.company, city: g.region === "Canada" ? pick(regions[0][1]) : pick((regions.find((r) => r[0] === g.region) || regions[1])[1]), region: g.region,
+      series: g.series, episode: g.episode,
+      headline: g.title + " at " + g.company + ". " + (14 + (i % 8)) + " years building brands people talk about.",
+      bio: g.name.split(" ")[0] + " started in a two-person marketing team and learned every job in it. Today " + g.name.split(" ")[0] + " leads marketing at " + g.company + ", where the focus is simple: understand customers better than anyone else, then say less, more clearly.",
+      timelineText: steps.join("\n"),
+      achievementsText: [wins[i % wins.length], wins[(i + 3) % wins.length], wins[(i + 5) % wins.length]].join("\n"),
+      proudest: proud[i % proud.length], flop: flops[i % flops.length], tool: tools[i % tools.length], shoutout: shouts[i % shouts.length], quote: quotes[i % quotes.length],
+      slug: slugify(g.name), stage: status, congrats: status === "published" ? 5 + Math.floor(rnd() * 60) : 0, views: status === "published" ? 80 + Math.floor(rnd() * 900) : 0, notes: []
+    };
+  });
+  guests.forEach((g) => { if (["published", "shared"].includes(g.stage)) { g.youtube = "youtube.com/@marketersunmuted"; g.spotify = "open.spotify.com/show/marketersunmuted"; } });
+
+  const articles = [
+    ["5 lessons from campaigns that flopped", "Guide", "draft", 10, "Claude (for SK)"],
+    ["How directors build a team people want to join", "Episode recap", "review", 4, "Claude (for SK)"],
+    ["What Canadian SMBs want from brands in 2027", "Research", "draft", 21, "Editorial desk"],
+    ["Why we feature managers, not just CMOs", "Guest column", "published", -3, "SK"],
+    ["Welcome to Marketers Unmuted", "News", "published", -6, "SK"]
+  ].map(([title, category, stage, d, author]) => ({ id: id("ar"), title, category, stage, date: iso(d), author, slug: slugify(title),
+    excerpt: "A short, practical read for marketing leaders, drawn from conversations on Marketers Unmuted.",
+    body: "Start with the problem your reader has today.\n\nThen give them three things they can do this week, each with a real example from an episode.\n\nEnd with one question they can take to their next team meeting.",
+    seoTitle: title + " | Marketers Unmuted", notes: [] }));
+
+  const moves = Array.from({ length: 8 }, (_, i) => {
+    const [company] = pick(companies);
+    return { id: id("mv"), name: person(), newRole: pick(["Chief Marketing Officer", "VP Marketing", "Director of Marketing", "Head of Brand", "Director, Growth"]), company, prevRole: pick(["Director of Marketing", "Senior Brand Manager", "Head of Content", "Marketing Manager"]) + " at " + pick(companies)[0], region: i < 6 ? "Canada" : "United States", date: iso(-i * 2), source: "", stage: i < 3 ? "published" : i < 5 ? "verified" : "spotted", congrats: i < 3 ? 3 + Math.floor(rnd() * 30) : 0, notes: [] };
+  });
+
+  const pages = [
+    ["Home", "/", "Live"], ["Episodes", "/episodes", "Live"], ["Marketer directory", "/marketers", "Live"], ["Articles", "/articles", "Live"],
+    ["People Moves", "/people-moves", "Live"], ["Top 100 Marketers", "/top-100", "Draft"], ["Nominate a marketer", "/nominate", "Draft"],
+    ["Be a guest", "/be-a-guest", "Live"], ["Newsletter sign-up", "/newsletter", "Live"], ["Events", "/events", "Live"], ["Jobs", "/jobs", "Hidden"],
+    ["Community waitlist", "/community", "Live"], ["About", "/about", "Live"], ["Partner with us", "/partners", "Draft"]
+  ].map(([name, path, status], i) => ({ id: id("pg"), name, path, status, seoTitle: name + " | Marketers Unmuted", seoDesc: "", updated: iso(-i), notes: [] }));
+
+  return { profiles, articles, moves, pages, posts, accounts, leads, guests, followups, partners, deals, content, nominations, coffee, events, waitlist: 47, newsletterSubs: 312, version: 1 };
 };
 
 MU.GOALS = [

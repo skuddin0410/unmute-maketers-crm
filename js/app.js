@@ -17,7 +17,7 @@
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { /* ignore */ } }
   load();
-  (function migrate() { const d = MU.buildDemo(); let changed = false; ["posts", "accounts"].forEach((k) => { if (!db[k]) { db[k] = d[k]; changed = true; } }); if (changed) save(); })();
+  (function migrate() { const d = MU.buildDemo(); let changed = false; ["posts", "accounts", "profiles", "articles", "moves", "pages"].forEach((k) => { if (!db[k]) { db[k] = d[k]; changed = true; } }); if (changed) save(); })();
 
   /* ---------- Dates & formatting ---------- */
   const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
@@ -38,6 +38,11 @@
     partners: '<path d="M7 11 3 7l4-4M17 13l4 4-4 4"/><path d="M3 7h11a4 4 0 0 1 4 4M21 17H10a4 4 0 0 1-4-4"/>',
     deals: '<path d="M12 3v18M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3S9.5 10.5 12 11s4.5 1.3 4.5 3.2-2 3.3-4.5 3.3-4.5-1.3-4.5-3"/>',
     socials: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6"/>',
+    directory: '<rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="9.5" cy="10.5" r="2.2"/><path d="M6 16.5c.6-1.8 2-2.7 3.5-2.7s2.9.9 3.5 2.7M15 9.5h3M15 13h3"/>',
+    episodes: '<circle cx="12" cy="12" r="8.5"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/>',
+    articles: '<path d="M4 5h16M4 10h16M4 15h10M4 20h7"/>',
+    moves: '<path d="M4 17 9.5 11.5l3.5 3.5L20 8"/><path d="M15 8h5v5"/>',
+    pages: '<rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9h17M7 6.5h.01M9.5 6.5h.01"/>',
     content: '<path d="M5 4h11l3 3v13H5z"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/>',
     community: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14.5s1.2 1.8 3.5 1.8 3.5-1.8 3.5-1.8M9 9.5h.01M15 9.5h.01"/>',
     team: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 0 0-2 1.2L5 5.9l-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.4-.9a7 7 0 0 0 2 1.2l.4 2.6h4.4l.4-2.6a7 7 0 0 0 2-1.2l2.4.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/>',
@@ -48,14 +53,14 @@
   /* ---------- Navigation ---------- */
   const NAV = [
     { group: "Overview", items: [{ id: "dashboard", label: "Dashboard" }] },
-    { group: "Guest pipeline", items: [{ id: "leads", label: "Leads" }, { id: "guests", label: "Guests & episodes" }, { id: "followups", label: "Follow-ups" }] },
-    { group: "Growth", items: [{ id: "partners", label: "Partnerships" }, { id: "deals", label: "Sponsors & deals" }] },
-    { group: "Audience", items: [{ id: "socials", label: "Socials" }, { id: "content", label: "Content" }, { id: "community", label: "Community" }] },
+    { group: "CRM", items: [{ id: "leads", label: "Leads" }, { id: "guests", label: "Guests & episodes" }, { id: "followups", label: "Follow-ups" }, { id: "partners", label: "Partnerships" }, { id: "deals", label: "Sponsors & deals" }] },
+    { group: "Website", items: [{ id: "directory", label: "Marketer directory" }, { id: "episodes", label: "Episodes" }, { id: "articles", label: "Articles" }, { id: "moves", label: "People Moves" }, { id: "pages", label: "Site pages" }] },
+    { group: "Audience", items: [{ id: "socials", label: "Socials" }, { id: "content", label: "Newsletter" }, { id: "community", label: "Community" }] },
     { group: "Admin", items: [{ id: "team", label: "Team & setup" }] }
   ];
   function dueCount() { return db.followups.filter((f) => !f.done && daysFrom(f.due) <= 0).length; }
   function renderNav(active) {
-    const counts = { socials: (db.posts || []).filter((p) => p.stage === "draft").length, leads: db.leads.length, guests: db.guests.filter((g) => g.stage !== "shared").length, followups: dueCount() };
+    const counts = { directory: db.profiles.filter((p) => p.stage === "sent").length, socials: (db.posts || []).filter((p) => p.stage === "draft").length, leads: db.leads.length, guests: db.guests.filter((g) => g.stage !== "shared").length, followups: dueCount() };
     $("#nav").innerHTML = NAV.map((g) => '<div class="nav-group"><h2>' + g.group + "</h2>" + g.items.map((it) => {
       const c = counts[it.id];
       const badge = c ? '<span class="nav-count' + (it.id === "followups" ? " alert" : "") + '">' + c + "</span>" : "";
@@ -155,6 +160,7 @@
       '</div><div class="stack">' +
       '<div class="panel"><div class="panel-head"><h2>6-month goals</h2></div>' + goals + "</div>" +
       '<div class="panel"><div class="panel-head"><h2>Partnerships: Canada first</h2><a href="#partners">All</a></div><ul class="list">' + nextPartner.map((p) => '<li><span class="grow"><strong>' + esc(p.org) + "</strong><span>" + esc(p.nextStep) + " · " + fmtDate(p.nextDate) + "</span></span>" + stagePill("partners", p.stage) + "</li>").join("") + "</ul></div>" +
+      '<div class="panel"><div class="panel-head"><h2>Website</h2><a href="#directory">Directory</a></div><ul class="list"><li><span class="grow"><strong>Profiles waiting for guest approval</strong></span><b>' + db.profiles.filter((p) => p.stage === "sent").length + '</b></li><li><span class="grow"><strong>Approved, ready to publish</strong></span><b>' + db.profiles.filter((p) => p.stage === "approved").length + '</b></li><li><span class="grow"><strong>Articles in review</strong></span><b>' + db.articles.filter((a) => a.stage === "review").length + '</b></li><li><span class="grow"><strong>People Moves to verify</strong></span><b>' + db.moves.filter((m) => m.stage === "spotted").length + "</b></li></ul></div>" +
       '<div class="panel"><div class="panel-head"><h2>Sponsor pipeline</h2><a href="#deals">Deals</a></div><div class="stat-row" style="grid-template-columns:1fr 1fr;margin:0"><div class="stat"><span>Open value</span><b>' + money(pipeline) + '</b></div><div class="stat"><span>Open deals</span><b>' + open.length + "</b></div></div></div>" +
       "</div></div>";
   };
@@ -278,12 +284,144 @@
     wireBoard("posts");
   };
 
+  /* ================= Website ================= */
+  const initials = (n) => String(n || "?").split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  const lines = (t) => String(t || "").split("\n").map((x) => x.trim()).filter(Boolean);
+  const SITE = "marketersunmuted.com";
+
+  /* Directory */
+  const dirUI = { q: "", stage: "", region: "" };
+  views.directory = function () {
+    const f = dirUI;
+    const list = db.profiles.filter((p) => (!f.q || (p.name + " " + p.company + " " + p.title).toLowerCase().includes(f.q.toLowerCase())) && (!f.stage || p.stage === f.stage) && (!f.region || p.region === f.region));
+    const regions = S.profiles.fields.find((x) => x.key === "region").options;
+    const count = (st) => db.profiles.filter((p) => p.stage === st).length;
+    return pageHead("Marketer directory", "Every guest gets a permanent page on the website: their journey, achievements and stories from the episode. Pages go live only after the guest approves.", '<button class="btn primary" data-add="profiles">Add profile</button>') +
+      '<div class="stat-row"><div class="stat"><span>Published</span><b>' + count("published") + '</b></div><div class="stat"><span>Waiting for guest</span><b>' + count("sent") + '</b></div><div class="stat"><span>Approved, not live</span><b>' + count("approved") + '</b></div><div class="stat"><span>Drafts</span><b>' + count("draft") + "</b></div></div>" +
+      '<div class="toolbar"><input type="search" id="dq" placeholder="Filter by name or company" value="' + esc(f.q) + '"><select id="dstage"><option value="">All statuses</option>' + S.profiles.stages.map((s) => '<option value="' + s.id + '"' + (s.id === f.stage ? " selected" : "") + ">" + s.name + "</option>").join("") + '</select><select id="dregion"><option value="">All regions</option>' + regions.map((r) => "<option" + (r === f.region ? " selected" : "") + ">" + r + "</option>").join("") + '</select><span class="result-count">' + list.length + " marketers</span></div>" +
+      (list.length ? '<div class="dir-grid">' + list.map((p) => '<a class="dir-card" href="#profile-' + p.id + '"><span class="avatar">' + esc(initials(p.name)) + '</span><span class="dir-body"><strong>' + esc(p.name) + "</strong><span>" + esc(p.title) + "</span><span>" + esc(p.company) + " · " + esc(p.city || p.region) + '</span><span class="dir-meta">' + stagePill("profiles", p.stage) + (p.stage === "published" ? '<span class="muted">' + p.views + " views</span>" : "") + "</span></span></a>").join("") + "</div>" : '<div class="panel empty-state"><strong>No marketers match</strong>Clear a filter, or create a profile from a recorded guest.</div>');
+  };
+  views.directory.after = function () {
+    $("#dq").addEventListener("input", (e) => { dirUI.q = e.target.value; render(); const el = $("#dq"); el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
+    $("#dstage").addEventListener("change", (e) => { dirUI.stage = e.target.value; render(); });
+    $("#dregion").addEventListener("change", (e) => { dirUI.region = e.target.value; render(); });
+  };
+
+  /* Single profile: editor sidebar + live website preview */
+  function profilePreview(p) {
+    const tl = lines(p.timelineText).map((l) => l.split("|").map((x) => x.trim()));
+    const segs = [["Proudest campaign", p.proudest], ["The flop", p.flop], ["Favourite tool", p.tool], ["Team shout-out", p.shoutout]].filter((x) => x[1]);
+    return '<article class="pp"><header class="pp-hero"><span class="pp-avatar">' + esc(initials(p.name)) + '</span><div><span class="pp-series">' + esc(p.series || "Marketers Unmuted") + "</span><h2>" + esc(p.name) + '</h2><p class="pp-role">' + esc(p.title) + " at " + esc(p.company) + (p.city ? " · " + esc(p.city) : "") + "</p>" + (p.headline ? '<p class="pp-headline">' + esc(p.headline) + "</p>" : "") + '<button class="pp-congrats" id="congrats">Congratulate ' + esc(String(p.name).split(" ")[0]) + " <span>" + (p.congrats || 0) + "</span></button></div></header>" +
+      '<div class="pp-grid"><div>' + (p.bio ? "<h3>Their story</h3><p>" + esc(p.bio) + "</p>" : "") +
+      (tl.length ? '<h3>Career journey</h3><ol class="pp-tl">' + tl.map((t, i) => '<li class="' + (i === tl.length - 1 ? "now" : "") + '"><b>' + esc(t[0] || "") + "</b><span>" + esc(t[1] || "") + "</span><small>" + esc(t[2] || "") + "</small></li>").join("") + "</ol>" : "") +
+      (lines(p.achievementsText).length ? '<h3>Achievements</h3><ul class="pp-ach">' + lines(p.achievementsText).map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul>" : "") +
+      "</div><div>" + (segs.length ? '<h3>From the episode</h3><div class="pp-segs">' + segs.map(([h, t]) => '<div class="pp-seg"><b>' + h + "</b><p>" + esc(t) + "</p></div>").join("") + "</div>" : "") +
+      (p.quote ? '<blockquote class="pp-quote">“' + esc(p.quote) + "”</blockquote>" : "") +
+      '<div class="pp-listen"><b>Listen to the episode</b><span>' + esc(p.episode || "Episode coming soon") + "</span><span class=\"muted\">YouTube · Spotify · Apple Podcasts</span></div></div></div></article>";
+  }
+  views.profile = function (id) {
+    const p = db.profiles.find((x) => x.id === id);
+    if (!p) return pageHead("Profile not found", "It may have been deleted.", '<a class="btn" href="#directory">Back to directory</a>');
+    const cur = S.profiles.stages.findIndex((s) => s.id === p.stage);
+    const next = { draft: ["send", "Send to guest for approval"], sent: ["approve", "Mark approved by guest"], approved: ["publish", "Publish to website"], published: ["unpublish", "Unpublish"] }[p.stage];
+    const guest = db.guests.find((g) => g.id === p.guestId);
+    const checks = [["Profile written", !!(p.bio && p.timelineText)], ["Episode stories added", !!(p.proudest && p.flop)], ["Guest approved the text", ["approved", "published"].includes(p.stage)], ["Episode published", guest ? ["published", "shared"].includes(guest.stage) : false]];
+    return '<div class="page-head"><div><a class="back" href="#directory">Marketer directory</a><h1>' + esc(p.name) + "</h1><p>" + esc(p.title) + ", " + esc(p.company) + '</p></div><div class="page-actions"><button class="btn" id="pEdit">Edit profile</button><button class="btn primary" id="pNext" data-act="' + next[0] + '">' + next[1] + "</button></div></div>" +
+      '<div class="stagebar wide">' + S.profiles.stages.map((s, i) => '<button data-pstage="' + s.id + '" class="' + (i < cur ? "past" : i === cur ? "now" : "") + '">' + s.name + "</button>").join("") + "</div>" +
+      '<div class="profile-layout"><section><div class="preview-bar"><span>Website preview</span><span class="muted">' + SITE + "/marketers/" + esc(p.slug || "") + "</span></div>" + profilePreview(p) + "</section>" +
+      '<aside class="stack"><div class="panel"><h2>Ready to publish?</h2><ul class="checks">' + checks.map(([t, ok]) => '<li class="' + (ok ? "ok" : "") + '"><span>' + (ok ? "✓" : "") + "</span>" + t + "</li>").join("") + "</ul></div>" +
+      '<div class="panel"><h2>On the website</h2><dl class="fields"><dt>Views</dt><dd>' + (p.views || 0) + "</dd><dt>Congratulations</dt><dd>" + (p.congrats || 0) + "</dd><dt>Region</dt><dd>" + esc(p.region || "—") + "</dd></dl></div>" +
+      (guest ? '<div class="panel"><h2>In the CRM</h2><p class="muted" style="margin-top:-6px">Same person, one record.</p><button class="btn small" id="pGuest">Open guest record</button></div>' : "") +
+      '<div class="panel"><h2>How profiles are written</h2><p class="muted" style="margin:0">From the guest\'s pre-interview form and the episode, never copied from LinkedIn. The guest approves the text before it goes live.</p></div></aside></div>';
+  };
+  views.profile.after = function (id) {
+    const p = db.profiles.find((x) => x.id === id); if (!p) return;
+    $("#pEdit").addEventListener("click", () => openForm("profiles", p));
+    $("#pNext").addEventListener("click", (e) => {
+      const act = e.target.dataset.act;
+      const to = { send: "sent", approve: "approved", publish: "published", unpublish: "approved" }[act];
+      p.stage = to; save(); render();
+      toast({ send: "Approval email drafted for " + p.name, approve: "Marked approved", publish: p.name + "'s page is live", unpublish: "Page taken offline" }[act]);
+    });
+    $$("[data-pstage]").forEach((b) => b.addEventListener("click", () => { p.stage = b.dataset.pstage; save(); render(); }));
+    $("#congrats").addEventListener("click", () => { p.congrats = (p.congrats || 0) + 1; save(); render(); });
+    const g = $("#pGuest"); if (g) g.addEventListener("click", () => openRecord("guests", p.guestId));
+  };
+  function profileFromGuest(g) {
+    let p = db.profiles.find((x) => x.guestId === g.id);
+    if (!p) {
+      p = { id: uid("pf"), guestId: g.id, name: g.name, title: g.title, company: g.company, region: g.region, city: "", series: g.series, episode: g.episode, headline: "", bio: "", timelineText: "", achievementsText: "", proudest: "", flop: "", tool: "", shoutout: "", quote: "", slug: g.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), stage: "draft", congrats: 0, views: 0, notes: [] };
+      db.profiles.push(p); save(); toast("Draft profile created");
+    }
+    closeDrawer(); location.hash = "#profile-" + p.id;
+  }
+
+  /* Website episodes */
+  views.episodes = function () {
+    const list = db.guests.filter((g) => ["editing", "published", "shared"].includes(g.stage)).sort((a, b) => b.recordAt.localeCompare(a.recordAt));
+    return pageHead("Episodes", "What's live on the website and podcast apps. Episodes move here from Guests & episodes once they're recorded.") +
+      '<div class="table-wrap"><table><thead><tr><th>Episode</th><th>Guest</th><th>Series</th><th>On the site</th><th>YouTube / Spotify</th><th>Profile page</th></tr></thead><tbody>' +
+      list.map((g) => { const p = db.profiles.find((x) => x.guestId === g.id); const live = ["published", "shared"].includes(g.stage);
+        return '<tr data-id="' + g.id + '"><td><strong>' + esc(g.episode || "Untitled") + '</strong><span class="sub">Recorded ' + fmtDate(g.recordAt) + "</span></td><td>" + esc(g.name) + '<span class="sub">' + esc(g.company) + "</span></td><td>" + esc(g.series) + "</td><td>" + (live ? '<span class="pill ok">Live</span>' : '<span class="pill warn">In editing</span>') + "</td><td>" + (g.youtube ? '<span class="pill ok">Linked</span>' : '<span class="muted">Not yet</span>') + "</td><td>" + (p ? '<a href="#profile-' + p.id + '" class="plink">' + stageName("profiles", p.stage) + "</a>" : '<span class="muted">None</span>') + "</td></tr>"; }).join("") + "</tbody></table></div>";
+  };
+  views.episodes.after = function () { $$("tbody tr").forEach((r) => r.addEventListener("click", (e) => { if (e.target.closest("a")) return; openRecord("guests", r.dataset.id); })); };
+
+  /* Articles */
+  views.articles = function () {
+    const list = db.articles.slice().sort((a, b) => b.date.localeCompare(a.date));
+    return pageHead("Articles", "Practical guides, episode recaps and guest columns for the website.", '<button class="btn primary" id="newArticle">New article</button>') +
+      '<div class="table-wrap"><table><thead><tr><th>Title</th><th>Category</th><th>Author</th><th>Date</th><th>Status</th></tr></thead><tbody>' +
+      list.map((a) => '<tr data-id="' + a.id + '"><td><strong>' + esc(a.title) + '</strong><span class="sub">' + SITE + "/articles/" + esc(a.slug) + "</span></td><td>" + esc(a.category) + "</td><td>" + esc(a.author) + "</td><td>" + fmtDate(a.date) + "</td><td>" + stagePill("articles", a.stage) + "</td></tr>").join("") + "</tbody></table></div>";
+  };
+  views.articles.after = function () {
+    $$("tbody tr").forEach((r) => r.addEventListener("click", () => { location.hash = "#article-" + r.dataset.id; }));
+    $("#newArticle").addEventListener("click", () => { const a = { id: uid("ar"), title: "Untitled article", category: "Guide", author: "Raoof", date: localISO(today()), slug: "untitled-article", excerpt: "", body: "", seoTitle: "", stage: "draft", notes: [] }; db.articles.push(a); save(); location.hash = "#article-" + a.id; });
+  };
+  function articlePreview(a) {
+    return '<article class="ap"><span class="pp-series">' + esc(a.category || "") + "</span><h2>" + esc(a.title || "Untitled") + '</h2><p class="muted">' + esc(a.author || "") + " · " + fmtDate(a.date) + "</p>" + (a.excerpt ? '<p class="ap-ex">' + esc(a.excerpt) + "</p>" : "") + String(a.body || "").split(/\n\s*\n/).filter(Boolean).map((para) => "<p>" + esc(para) + "</p>").join("") + "</article>";
+  }
+  views.article = function (id) {
+    const a = db.articles.find((x) => x.id === id);
+    if (!a) return pageHead("Article not found", "", '<a class="btn" href="#articles">Back to articles</a>');
+    const inp = (k, label, type) => '<label>' + label + (type === "textarea" ? '<textarea name="' + k + '" rows="' + (k === "body" ? 14 : 3) + '">' + esc(a[k] || "") + "</textarea>" : '<input name="' + k + '" type="' + (type || "text") + '" value="' + esc(a[k] || "") + '">') + "</label>";
+    const cat = '<label>Category<select name="category">' + S.articles.fields.find((f) => f.key === "category").options.map((o) => "<option" + (o === a.category ? " selected" : "") + ">" + o + "</option>").join("") + "</select></label>";
+    const st = '<label>Status<select name="stage">' + S.articles.stages.map((s) => '<option value="' + s.id + '"' + (s.id === a.stage ? " selected" : "") + ">" + s.name + "</option>").join("") + "</select></label>";
+    return '<div class="page-head"><div><a class="back" href="#articles">Articles</a><h1>Edit article</h1><p>Changes show in the preview as you type.</p></div><div class="page-actions"><button class="btn ghost" id="aDel">Delete</button><button class="btn" id="aSave">Save draft</button><button class="btn primary" id="aPub">' + (a.stage === "published" ? "Update live article" : "Publish") + "</button></div></div>" +
+      '<div class="editor-layout"><form class="panel form-grid" id="aForm">' + '<div class="full">' + inp("title", "Title") + "</div>" + cat + st + inp("author", "Author") + inp("date", "Publish date", "date") + '<div class="full">' + inp("excerpt", "Summary", "textarea") + "</div>" + '<div class="full">' + inp("body", "Article (blank line between paragraphs)", "textarea") + "</div>" + inp("slug", "Page address") + inp("seoTitle", "Search title") + '</form><section><div class="preview-bar"><span>Website preview</span><span class="muted" id="aUrl">' + SITE + "/articles/" + esc(a.slug) + '</span></div><div id="aPrev">' + articlePreview(a) + "</div></section></div>";
+  };
+  views.article.after = function (id) {
+    const a = db.articles.find((x) => x.id === id); if (!a) return;
+    const form = $("#aForm");
+    const read = () => { const fd = new FormData(form); fd.forEach((v, k) => { a[k] = String(v); }); };
+    form.addEventListener("input", () => { read(); $("#aPrev").innerHTML = articlePreview(a); $("#aUrl").textContent = SITE + "/articles/" + a.slug; });
+    $("#aSave").addEventListener("click", () => { read(); save(); toast("Article saved"); });
+    $("#aPub").addEventListener("click", () => { read(); if (!a.title.trim() || !a.body.trim()) { toast("Add a title and article text before publishing"); return; } a.stage = "published"; save(); render(); toast("Article published"); });
+    $("#aDel").addEventListener("click", () => confirmBox("Delete this article? This can't be undone.", "Delete", () => { db.articles = db.articles.filter((x) => x.id !== id); save(); location.hash = "#articles"; toast("Article deleted"); }));
+  };
+
+  /* People Moves */
+  views.moves = function () {
+    const card = (m) => "<strong>" + esc(m.name) + '</strong><span class="sub">' + esc(m.newRole) + ", " + esc(m.company) + '</span><span class="sub">Was: ' + esc(m.prevRole || "—") + '</span><div class="meta"><span class="pill">' + fmtDate(m.date) + "</span>" + (m.congrats ? '<span class="pill lime">' + m.congrats + " congrats</span>" : "") + "</div>";
+    return pageHead("People Moves", "Who got appointed or promoted. Published every Wednesday with a Congratulate button. Every new leader is also a sales signal: new leaders review budgets.", '<button class="btn primary" data-add="moves">Add a move</button>') + board("moves", db.moves, card);
+  };
+  views.moves.after = function () { wireBoard("moves"); };
+
+  /* Site pages */
+  views.pages = function () {
+    const settings = [["Domain", "marketersunmuted.com (to buy)"], ["Hosting", "Netlify, Phase 2"], ["Newsletter", "Mailchimp audience: Unmuted Brief"], ["Analytics", "To choose"], ["Brand", "Navy, lime, signal red · Manrope"]];
+    return pageHead("Site pages", "Every public page, its address and what search engines see.", '<button class="btn primary" data-add="pages">Add page</button>') +
+      '<div class="grid-2"><div class="table-wrap"><table><thead><tr><th>Page</th><th>Address</th><th>Status</th><th>Updated</th></tr></thead><tbody>' +
+      db.pages.map((p) => '<tr data-id="' + p.id + '"><td><strong>' + esc(p.name) + '</strong><span class="sub">' + esc(p.seoTitle || "") + "</span></td><td>" + esc(p.path) + '</td><td><span class="pill ' + (p.status === "Live" ? "ok" : p.status === "Draft" ? "warn" : "") + '">' + esc(p.status) + "</span></td><td>" + fmtDate(p.updated) + "</td></tr>").join("") + "</tbody></table></div>" +
+      '<div class="panel"><h2>Site settings</h2><dl class="fields">' + settings.map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("") + '</dl><p class="tip">Directory profiles, episodes, articles and People Moves publish from their own pages. This list controls the fixed pages around them.</p></div></div>';
+  };
+  views.pages.after = function () { $$("tbody tr").forEach((r) => r.addEventListener("click", () => openForm("pages", db.pages.find((p) => p.id === r.dataset.id)))); };
+
   /* Content */
   const contentUI = { type: "" };
   views.content = function () {
     const types = S.content.fields.find((f) => f.key === "type").options;
     const list = db.content.filter((c) => !contentUI.type || c.type === contentUI.type).sort((a, b) => a.date.localeCompare(b.date));
-    return pageHead("Content", "Weekly rhythm: Marketer and Question of the Week on Monday, People Moves on Wednesday, the Unmuted Brief on Thursday.", '<button class="btn primary" data-add="content">Add content</button>') +
+    return pageHead("Newsletter", "Weekly rhythm: Marketer and Question of the Week on Monday, People Moves on Wednesday, the Unmuted Brief on Thursday.", '<button class="btn primary" data-add="content">Add content</button>') +
       '<div class="toolbar"><select id="ctype"><option value="">All types</option>' + types.map((t) => "<option" + (t === contentUI.type ? " selected" : "") + ">" + esc(t) + "</option>").join("") + '</select><span class="result-count">' + list.length + " items</span></div>" +
       '<div class="table-wrap"><table><thead><tr><th>Title</th><th>Type</th><th>Publish</th><th>Owner</th><th>Status</th></tr></thead><tbody>' +
       list.map((c) => '<tr data-id="' + c.id + '"><td><strong>' + esc(c.title) + "</strong></td><td>" + esc(c.type) + "</td><td>" + fmtDate(c.date) + '<span class="sub">' + rel(c.date) + "</span></td><td>" + esc(c.owner) + "</td><td>" + stagePill("content", c.stage) + "</td></tr>").join("") + "</tbody></table></div>";
@@ -317,7 +455,7 @@
   views.team.after = function () { $("#resetDemo2").addEventListener("click", resetDemo); };
 
   /* ---------- Record drawer ---------- */
-  function titleOf(col, r) { if (col === "posts") return r.channel + " post"; if (col === "accounts") return r.name + " on " + r.platform; return r.name || r.org || r.company || r.title || r.who; }
+  function titleOf(col, r) { if (col === "posts") return r.channel + " post"; if (col === "accounts") return r.name + " on " + r.platform; if (col === "moves") return r.name; return r.name || r.org || r.company || r.title || r.who; }
   function subOf(col, r) {
     if (col === "leads" || col === "guests") return r.title + ", " + r.company;
     if (col === "partners") return r.region + " · " + r.city;
@@ -326,9 +464,15 @@
     if (col === "nominations") return r.company + " · " + r.category;
     if (col === "posts") return (r.format || "") + (r.scheduledAt ? " · " + fmtDate(r.scheduledAt) + " " + fmtTime(r.scheduledAt) : " · not scheduled");
     if (col === "accounts") return r.handle || "";
+    if (col === "moves") return r.newRole + ", " + r.company;
+    if (col === "profiles") return r.title + ", " + r.company;
+    if (col === "articles") return r.category;
+    if (col === "pages") return r.path;
     return "";
   }
   function openRecord(col, id) {
+    if (col === "profiles") { closeDrawer(); location.hash = "#profile-" + id; return; }
+    if (col === "articles") { closeDrawer(); location.hash = "#article-" + id; return; }
     const r = db[col].find((x) => x.id === id); if (!r) return;
     const sch = S[col];
     const stages = sch.stages ? '<div class="stagebar" role="group" aria-label="Stage">' + sch.stages.map((s, i) => {
@@ -344,7 +488,8 @@
     }).join("") + "</dl>";
     let actions = "";
     if (col === "leads") actions += '<button class="btn primary" id="toGuest">Book as guest</button>';
-    if (col === "guests") actions += '<button class="btn" id="fuSched">Schedule follow-ups</button>';
+    if (col === "guests") { const pf = db.profiles.find((x) => x.guestId === r.id); actions += '<button class="btn primary" id="toProfile">' + (pf ? "Open website profile" : "Create website profile") + '</button><button class="btn" id="fuSched">Schedule follow-ups</button>'; }
+    if (col === "moves") actions += '<button class="btn primary" id="moveLead">Add to leads</button>';
     const assist = col === "leads" ? '<h3>Claude will do this</h3><div class="ai-box">In Phase 3, I score <b>fit</b> and <b>sponsor potential</b>, find the email from your Apollo/Seamless export, and draft a personal invite you approve.</div>' :
       col === "posts" ? '<h3>Claude will do this</h3><div class="ai-box">I write the caption from the episode, pick the clip or quote card from Canva, and post it at the scheduled time once you approve. Links go in the first comment.</div>' :
       col === "guests" ? '<h3>Claude will do this</h3><div class="ai-box">Before recording: a one-page guest brief for SK. After: titles, show notes, 3–5 clip picks, quote cards in Canva and the guest share kit.</div>' : "";
@@ -361,6 +506,8 @@
     $("#delRec").addEventListener("click", () => confirmBox("Delete " + titleOf(col, r) + "? This can't be undone.", "Delete", () => { db[col] = db[col].filter((x) => x.id !== id); save(); closeDrawer(); toast("Deleted"); render(); }));
     $("#noteForm").addEventListener("submit", (e) => { e.preventDefault(); const t = $("#noteText").value.trim(); if (!t) { $("#noteText").focus(); return; } (r.notes = r.notes || []).push({ text: t, at: Date.now() }); save(); openRecord(col, id); toast("Note saved"); });
     const tg = $("#toGuest"); if (tg) tg.addEventListener("click", () => { closeDrawer(); openForm("guests", { name: r.name, title: r.title, company: r.company, region: r.region, email: r.email, series: { CMO: "CMO Edition", Director: "Director Edition" }[r.level] || "Manager Edition", format: "Remote" }, () => { r.stage = "invited"; save(); }); });
+    const tp = $("#toProfile"); if (tp) tp.addEventListener("click", () => profileFromGuest(r));
+    const ml = $("#moveLead"); if (ml) ml.addEventListener("click", () => { if (db.leads.some((l) => l.name === r.name && l.company === r.company)) { toast("Already in leads"); return; } db.leads.push({ id: uid("ld"), name: r.name, title: r.newRole, company: r.company, level: /chief|vp|head/i.test(r.newRole) ? "CMO" : "Director", region: r.region || "Canada", city: "", industry: "", source: "People Moves", stage: "mined", fit: null, sponsor: "", email: "", phone: "", linkedin: "", notes: [], createdAt: localISO(today()) }); save(); toast(r.name + " added to leads"); renderNav(current().nav); });
     const fs = $("#fuSched"); if (fs) fs.addEventListener("click", () => { scheduleFollowups(r); save(); render(); });
   }
   function closeDrawer() { const d = $("#drawer"); d.classList.remove("open"); d.setAttribute("aria-hidden", "true"); $("#scrim").hidden = true; }
@@ -397,13 +544,15 @@
       });
       if (!ok) { const firstErr = $$(".err", m).find((x) => x.textContent); if (firstErr) firstErr.previousElementSibling.focus(); return; }
       if (sch.stages) out.stage = fd.get("stage");
-      if (editing) { Object.assign(rec, out); toast("Saved"); }
+      if (editing) { Object.assign(rec, out); if (col === "pages") rec.updated = localISO(today()); toast("Saved"); }
       else {
         const nr = Object.assign({ id: uid(col.slice(0, 2)), notes: [], createdAt: new Date().toISOString().slice(0, 10) }, out);
         if (col === "followups") nr.done = false;
         if (col === "guests" && !nr.recordAt) nr.recordAt = localISO(new Date()) + "T10:00";
         if (col === "events") nr.rsvps = 0;
         db[col].push(nr); if (onCreate) onCreate(nr);
+        if (col === "profiles") { nr.slug = String(nr.slug || nr.name).toLowerCase().replace(/[^a-z0-9]+/g, "-"); nr.congrats = 0; nr.views = 0; setTimeout(() => { location.hash = "#profile-" + nr.id; }, 0); }
+        if (col === "pages") nr.updated = localISO(today());
         toast(sch.label + " added");
       }
       save(); m.close(); render(); if (editing && $("#drawer").classList.contains("open")) openRecord(col, rec.id);
@@ -467,7 +616,7 @@
     inp.addEventListener("input", () => {
       const q = inp.value.trim().toLowerCase(); if (q.length < 2) { box.hidden = true; return; }
       const hits = [];
-      [["leads", "Lead"], ["guests", "Guest"], ["partners", "Association"], ["deals", "Deal"]].forEach(([col, lab]) => db[col].forEach((r) => {
+      [["leads", "Lead"], ["guests", "Guest"], ["profiles", "Profile"], ["articles", "Article"], ["partners", "Association"], ["deals", "Deal"]].forEach(([col, lab]) => db[col].forEach((r) => {
         const hay = [r.name, r.org, r.company, r.title, r.city].join(" ").toLowerCase();
         if (hay.includes(q)) hits.push({ col, id: r.id, t: titleOf(col, r), s: lab + " · " + subOf(col, r) });
       }));
@@ -479,13 +628,19 @@
   }
 
   /* ---------- Router ---------- */
-  function current() { const r = (location.hash || "#dashboard").replace(/^#\/?/, ""); return views[r] ? r : "dashboard"; }
+  function current() {
+    const raw = (location.hash || "#dashboard").replace(/^#\/?/, "");
+    const m = raw.match(/^(profile|article)-(.+)$/);
+    if (m) return { view: m[1], id: m[2], nav: m[1] === "profile" ? "directory" : "articles" };
+    const v = views[raw] ? raw : "dashboard";
+    return { view: v, nav: v };
+  }
   function render() {
     const r = current();
-    renderNav(r);
-    $("#view").innerHTML = views[r]();
+    renderNav(r.nav);
+    $("#view").innerHTML = views[r.view](r.id);
     $$("[data-add]").forEach((b) => b.addEventListener("click", () => openForm(b.dataset.add)));
-    if (views[r].after) views[r].after();
+    if (views[r.view].after) views[r.view].after(r.id);
   }
   function resetDemo() { confirmBox("Reset all demo data? Your changes in this browser will be lost.", "Reset demo data", doReset); }
   function doReset() { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } db = MU.buildDemo(); save(); render(); toast("Demo data reset"); }
